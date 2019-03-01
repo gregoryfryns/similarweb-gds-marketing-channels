@@ -61,10 +61,10 @@ function getConnectorFields() {
     .setType(types.TEXT);
 
   fields.newDimension()
-    .setId('device')
-    .setName('Device')
+    .setId('channel')
+    .setName('Channel')
     .setGroup('Dimensions')
-    .setDescription('Device type: Desktop or Mobile Web')
+    .setDescription('Traffic Source Channel')
     .setType(types.TEXT);
 
   fields.newMetric()
@@ -73,53 +73,12 @@ function getConnectorFields() {
     .setDescription('SimilarWeb estimated number of visits')
     .setType(types.NUMBER);
 
-  fields.newMetric()
-    .setId('page_views')
-    .setName('Total Page Views')
-    .setDescription('SimilarWeb estimated number of pages views')
-    .setType(types.NUMBER)
-    .setIsHidden(true);
-
-  fields.newMetric()
-    .setId('ppv')
-    .setName('Pages per Visit')
-    .setDescription('Average number of pages visited per session')
-    .setType(types.NUMBER)
-    .setFormula('sum($page_views)/sum($visits)');
-
-  fields.newMetric()
-    .setId('visits_duration')
-    .setName('Total Visits Duration')
-    .setDescription('SimilarWeb estimated amount of time spent on domain')
-    .setType(types.NUMBER)
-    .setIsHidden(true);
-
-  fields.newMetric()
-    .setId('avg_visit_duration')
-    .setName('Avg. Visit Duration')
-    .setDescription('Average time spent per visit, in seconds')
-    .setType(types.DURATION)
-    .setFormula('sum($visits_duration)/sum($visits)');
-
-  fields.newMetric()
-    .setId('bounced_visits')
-    .setName('Bounced Visits')
-    .setDescription('SimilarWeb estimated number of bounced visits')
-    .setType(types.NUMBER)
-    .setIsHidden(true);
-
-  fields.newMetric()
-    .setId('bounce_rate')
-    .setName('Bounce rate')
-    .setDescription('Rate of visits for which no other interaction has been detected 30 minutes after the user first accessed the page')
-    .setType(types.PERCENT)
-    .setFormula('sum($bounced_visits)/sum($visits)');
-
-  fields.newMetric()
-    .setId('unique_visitors')
-    .setName('Monthly Unique Visitors')
-    .setDescription('Amount of unique users that visited the domain within a month')
-    .setType(types.NUMBER);
+  // fields.newMetric()
+  //   .setId('bounce_rate')
+  //   .setName('Bounce rate')
+  //   .setDescription('Rate of visits for which no other interaction has been detected 30 minutes after the user first accessed the page')
+  //   .setType(types.PERCENT)
+  //   .setFormula('sum($bounced_visits)/sum($visits)');
 
   fields.setDefaultDimension('domain');
   fields.setDefaultMetric('visits');
@@ -148,108 +107,34 @@ function getData(request) {
   console.log('requested fields ids', JSON.stringify(requestedFieldIDs));
   var requestedFields = getConnectorFields().forIds(requestedFieldIDs);
 
+  var url = 'https://api.similarweb.com/v1/website/xxx/traffic-sources/overview-share';
   // Prepare data to be fetched
-  var endpoints = {
-    desktopVisits: {
-      url: 'https://api.similarweb.com/v1/website/xxx/traffic-and-engagement/visits',
-      objectName: 'visits',
-      device: 'desktop',
-      isRequired: false
-    },
-    mobileVisits: {
-      url: 'https://api.similarweb.com/v2/website/xxx/mobile-web/visits',
-      objectName: 'visits',
-      device: 'mobile',
-      isRequired: false
-    },
-    desktopPagesPerVisit: {
-      url: 'https://api.similarweb.com/v1/website/xxx/traffic-and-engagement/pages-per-visit',
-      objectName: 'pages_per_visit',
-      device: 'desktop',
-      isRequired: false
-    },
-    mobilePagesPerVisit: {
-      url: 'https://api.similarweb.com/v2/website/xxx/mobile-web/pages-per-visit',
-      objectName: 'pages_per_visit',
-      device: 'mobile',
-      isRequired: false
-    },
-    desktopAvgVisitDuration: {
-      url: 'https://api.similarweb.com/v1/website/xxx/traffic-and-engagement/average-visit-duration',
-      objectName: 'average_visit_duration',
-      device: 'desktop',
-      isRequired: false
-    },
-    mobileAvgVisitDuration: {
-      url: 'https://api.similarweb.com/v2/website/xxx/mobile-web/average-visit-duration',
-      objectName: 'average_visit_duration',
-      device: 'mobile',
-      isRequired: false
-    },
-    desktopBounceRate: {
-      url: 'https://api.similarweb.com/v1/website/xxx/traffic-and-engagement/bounce-rate',
-      objectName: 'bounce_rate',
-      device: 'desktop',
-      isRequired: false
-    },
-    mobileBounceRate: {
-      url: 'https://api.similarweb.com/v2/website/xxx/mobile-web/bounce-rate',
-      objectName: 'bounce_rate',
-      device: 'mobile',
-      isRequired: false
-    },
-    desktopUniqueVisitors: {
-      url: 'https://api.similarweb.com/v1/website/xxx/unique-visitors/desktop_mau',
-      objectName: 'unique_visitors',
-      device: 'desktop',
-      isRequired: false
-    },
-    mobileUniqueVisitors: {
-      url: 'https://api.similarweb.com/v1/website/xxx/unique-visitors/mobileweb_mau',
-      objectName: 'unique_visitors',
-      device: 'mobile',
-      isRequired: false
-    }
-  };
 
-  requestedFields.asArray().forEach(function (field) {
-    switch (field.getId()) {
-    case 'visits':
-      endpoints.desktopVisits.isRequired = true;
-      endpoints.mobileVisits.isRequired = true;
-      break;
-    case 'page_views':
-      endpoints.desktopVisits.isRequired = true;
-      endpoints.desktopPagesPerVisit.isRequired = true;
-      endpoints.mobileVisits.isRequired = true;
-      endpoints.mobilePagesPerVisit.isRequired = true;
-      break;
-    case 'visits_duration':
-      endpoints.desktopVisits.isRequired = true;
-      endpoints.desktopAvgVisitDuration.isRequired = true;
-      endpoints.mobileVisits.isRequired = true;
-      endpoints.mobileAvgVisitDuration.isRequired = true;
-      break;
-    case 'bounced_visits':
-      endpoints.desktopVisits.isRequired = true;
-      endpoints.desktopBounceRate.isRequired = true;
-      endpoints.mobileVisits.isRequired = true;
-      endpoints.mobileBounceRate.isRequired = true;
-      break;
-    case 'unique_visitors':
-      endpoints.desktopUniqueVisitors.isRequired = true;
-      endpoints.mobileUniqueVisitors.isRequired = true;
-    }
-  });
+  var collectedData = {};
+  var params = generateApiParams(apiKey, country);
 
-  var data = {};
   domains.forEach(function(domain) {
-    data[domain] = collectData(endpoints, domain, country, apiKey);
+    collectedData[domain] = {};
+
+    // data[domain] = collectData(endpoints, domain, country, apiKey);
+    params.desktop['domain'] = domain;
+    var data = retrieveOrGet(url, params.desktop);
+    if (data && data.visits && data.visits[domain]) {
+      data.visits[domain].forEach(function(src) {
+        src.visits.forEach(function(monthlyValues) {
+          var date = monthlyValues.date;
+          if (!collectedData[domain].hasOwnProperty(date)) {
+            collectedData[domain][date] = {};
+          }
+          collectedData[domain][date][src.source_type] = { organic: monthlyValues.organic, paid: monthlyValues.paid };
+        });
+      });
+    }
   });
 
   return {
     schema: requestedFields.build(),
-    rows: buildTabularData(requestedFields, data)
+    rows: buildTabularData(requestedFields, collectedData)
   };
 }
 
@@ -275,44 +160,52 @@ function buildTabularData(requestedFields, data) {
   var requestedData = [];
 
   Object.keys(data).forEach(function(dom) {
-    var desktopData = data[dom].desktop;
+    var desktopData = data[dom];
     Object.keys(desktopData).forEach(function(date) {
-      var values = desktopData[date];
-      var row = buildRow(date, dom, 'Desktop', requestedFields, values);
+      if (date == '2018-01-01') {
+        console.log('Build tabular data - Daily values for ' + date, desktopData[date]);
+      }
 
-      requestedData.push({ values: row });
-    });
-
-    var mobileData = data[dom].mobile;
-    Object.keys(mobileData).forEach(function(date) {
-      var values = mobileData[date];
-      var row = buildRow(date, dom, 'Mobile Web', requestedFields, values);
-
-      requestedData.push({ values: row });
+      Object.keys(desktopData[date]).forEach(function(src) {
+        var srcTraffic = desktopData[date][src];
+        switch (src) {
+        case 'Search':
+          requestedData.push({ values: buildRow(requestedFields, date, dom, 'Organic Search', srcTraffic.organic) });
+          requestedData.push({ values: buildRow(requestedFields, date, dom, 'Paid Search', srcTraffic.paid) });
+          break;
+        case 'Social':
+          requestedData.push({ values: buildRow(requestedFields, date, dom, 'Social', srcTraffic.organic) });
+          break;
+        case 'Mail':
+          requestedData.push({ values: buildRow(requestedFields, date, dom, 'Email', srcTraffic.organic) });
+          break;
+        case 'Display Ads':
+          requestedData.push({ values: buildRow(requestedFields, date, dom, 'Display Ads', srcTraffic.paid) });
+          break;
+        case 'Direct':
+          requestedData.push({ values: buildRow(requestedFields, date, dom, 'Direct', srcTraffic.organic) });
+          break;
+        case 'Referrals':
+          requestedData.push({ values: buildRow(requestedFields, date, dom, 'Referrals', srcTraffic.organic) });
+          break;
+        }
+      });
     });
   });
 
+  console.log('Requested data (1st row)', requestedData[0]);
   return requestedData;
 }
 
-function buildRow(date, dom, deviceName, requestedFields, values) {
+function buildRow(requestedFields, date, dom, channel, value) {
+  if (date == '2018-01-01') {
+    console.log('Requested Fields for ' + date, requestedFields);
+  }
   var row = [];
   requestedFields.asArray().forEach(function (field) {
     switch (field.getId()) {
     case 'visits':
-      row.push(values.visits);
-      break;
-    case 'page_views':
-      row.push(values.visits * values.pages_per_visit);
-      break;
-    case 'visits_duration':
-      row.push(values.visits * values.average_visit_duration);
-      break;
-    case 'bounced_visits':
-      row.push(values.visits * values.bounce_rate);
-      break;
-    case 'unique_visitors':
-      row.push(values.unique_visitors);
+      row.push(value);
       break;
     case 'date':
       row.push(date.split('-').slice(0, 3).join(''));
@@ -320,49 +213,18 @@ function buildRow(date, dom, deviceName, requestedFields, values) {
     case 'domain':
       row.push(dom);
       break;
-    case 'device':
-      row.push(deviceName);
+    case 'channel':
+      row.push(channel);
       break;
     default:
       row.push('');
     }
   });
 
+  if (date == '2018-01-01') {
+    console.log('Returned row for ' + date, row);
+  }
   return row;
-}
-/**
- * Creates an object with the results for the required endpoints
- *
- * @param {Set} endpoints - set of objects with endpoint details (url, object name, device type & isRequired boolean)
- * @param {string} domain - domain name
- * @param {string} country - country code
- * @param {string} apiKey - SimilarWeb API key
- * @return {object} - Results
- */
-function collectData(endpoints, domain, country, apiKey) {
-  var result = { desktop: {}, mobile: {} };
-  var params = getApiParams(apiKey, country, domain);
-
-  Object.keys(endpoints).forEach(function(epName) {
-    var ep = endpoints[epName];
-    // Retrieve data from cache or API
-    if (ep.isRequired && params[ep.device]) {
-      var data = retrieveOrGet(ep.url, params[ep.device]);
-      if (data && data[ep.objectName]) {
-        data[ep.objectName].forEach(function(monthlyValues) {
-          var date = monthlyValues.date;
-
-          var deviceResult = result[ep.device];
-          if (!deviceResult.hasOwnProperty(date)) {
-            deviceResult[date] = {};
-          }
-          deviceResult[date][ep.objectName] = monthlyValues[ep.objectName];
-        });
-      }
-    }
-  });
-
-  return result;
 }
 
 /**
@@ -422,38 +284,45 @@ function httpGet(url, params) {
   return data;
 }
 
-function getApiParams(apiKey, country, domain) {
-  var capData = httpGet('https://api.similarweb.com/capabilities', { api_key: apiKey });
-
+/**
+ * Generate an object with 2 objects containing the API parameters to be used for the SW desktop
+ * and mobile web API requests respectively
+ *
+ * @param {string} apiKey - SimilarWeb API Key
+ * @param {string} country - 2-letter ISO country code of the desired country or 'world' for Worldwide
+ * @param {?string} domain - desired domain
+ * @return {object} - Object containing two objects: desktop & mobile with the API parameters to specific
+ *   to desktop and mobile web requests respectively
+ */
+function generateApiParams(apiKey, country, domain) {
+  var capData = retrieveOrGet('https://api.similarweb.com/capabilities', { api_key: apiKey });
   var params = { desktop: null, mobile: null };
 
   if (capData && capData.remaining_hits && capData.web_desktop_data && capData.web_mobile_data) {
+    var paramsCommon = {
+      api_key: apiKey,
+      country: country,
+      domain: domain,
+      granularity: 'monthly',
+      main_domain_only: 'false',
+      show_verified: 'false'
+    };
+    if (domain !== undefined) {
+      paramsCommon['domain'] = domain;
+    }
+
     // If the selected country is available for that API key (desktop)
     if (capData.web_desktop_data.countries.some(function(c) {return c.code.toLowerCase() == country;})) {
-      params.desktop = {
-        api_key: apiKey,
-        country: country,
-        domain: domain,
-        start_date: capData.web_desktop_data.snapshot_interval.start_date.split('-').slice(0, 2).join('-'),
-        end_date: capData.web_desktop_data.snapshot_interval.end_date.split('-').slice(0, 2).join('-'),
-        granularity: 'monthly',
-        main_domain_only: 'false',
-        show_verified: 'false'
-      };
+      params.desktop = JSON.parse(JSON.stringify(paramsCommon)); // clone paramsCommon object
+      params.desktop['start_date'] = capData.web_desktop_data.snapshot_interval.start_date.split('-').slice(0, 2).join('-');
+      params.desktop['end_date'] = capData.web_desktop_data.snapshot_interval.end_date.split('-').slice(0, 2).join('-');
     }
 
     // If the selected country is available for that API key (mobile web)
     if (capData.web_mobile_data.countries.some(function(c) {return c.code.toLowerCase() == country;})) {
-      params.mobile = {
-        api_key: apiKey,
-        country: country,
-        domain: domain,
-        start_date: capData.web_mobile_data.snapshot_interval.start_date.split('-').slice(0, 2).join('-'),
-        end_date: capData.web_mobile_data.snapshot_interval.end_date.split('-').slice(0, 2).join('-'),
-        granularity: 'monthly',
-        main_domain_only: 'false',
-        show_verified: 'false'
-      };
+      params.mobile = JSON.parse(JSON.stringify(paramsCommon)); // clone paramsCommon object
+      params.mobile['start_date'] = capData.web_mobile_data.snapshot_interval.start_date.split('-').slice(0, 2).join('-');
+      params.mobile['end_date'] = capData.web_mobile_data.snapshot_interval.end_date.split('-').slice(0, 2).join('-');
     }
   }
 

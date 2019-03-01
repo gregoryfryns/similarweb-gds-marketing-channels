@@ -13,6 +13,6 @@ Here's an example GDS report using this connector:
 
 
 ## More Info
-This connector is heaviliy inspired by [Bajena's Spotify Data Studio Connector](https://github.com/Bajena/spotify-gds-connector), whose development is described in the following blog post: https://itnext.io/building-a-custom-google-data-studio-connector-from-a-z-b4d711a5cf58
+This connector is heavily inspired by [Bajena's Spotify Data Studio Connector](https://github.com/Bajena/spotify-gds-connector), whose development is described in the following blog post: https://itnext.io/building-a-custom-google-data-studio-connector-from-a-z-b4d711a5cf58
 
 To subscribe to a SimilarWeb Pro account, please follow this link: www.similarweb.com
