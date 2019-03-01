@@ -162,10 +162,6 @@ function buildTabularData(requestedFields, data) {
   Object.keys(data).forEach(function(dom) {
     var desktopData = data[dom];
     Object.keys(desktopData).forEach(function(date) {
-      if (date == '2018-01-01') {
-        console.log('Build tabular data - Daily values for ' + date, desktopData[date]);
-      }
-
       Object.keys(desktopData[date]).forEach(function(src) {
         var srcTraffic = desktopData[date][src];
         switch (src) {
@@ -193,14 +189,10 @@ function buildTabularData(requestedFields, data) {
     });
   });
 
-  console.log('Requested data (1st row)', requestedData[0]);
   return requestedData;
 }
 
 function buildRow(requestedFields, date, dom, channel, value) {
-  if (date == '2018-01-01') {
-    console.log('Requested Fields for ' + date, requestedFields);
-  }
   var row = [];
   requestedFields.asArray().forEach(function (field) {
     switch (field.getId()) {
@@ -221,9 +213,6 @@ function buildRow(requestedFields, date, dom, channel, value) {
     }
   });
 
-  if (date == '2018-01-01') {
-    console.log('Returned row for ' + date, row);
-  }
   return row;
 }
 
