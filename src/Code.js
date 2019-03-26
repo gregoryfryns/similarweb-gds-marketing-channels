@@ -1,13 +1,77 @@
-/* global DataStudioApp, Session */
+/* global DataStudioApp, Session, PropertiesService */
 
 if (typeof(require) !== 'undefined') {
-  var retrieveOrGet = require('./utils.js')['retrieveOrGet'];
+  var [retrieveOrGet, httpGet] = require('./utils.js')['retrieveOrGet', 'httpGet'];
 }
 
 // eslint-disable-next-line no-unused-vars
-function getAuthType(request) {
-  var response = { type: 'NONE' };
-  return response;
+function getAuthType() {
+  var cc = DataStudioApp.createCommunityConnector();
+  return cc.newAuthTypeResponse()
+    .setAuthType(cc.AuthType.KEY)
+    .setHelpUrl('https://account.similarweb.com/#/api-management')
+    .build();
+}
+
+// eslint-disable-next-line no-unused-vars
+function resetAuth() {
+  var userProperties = PropertiesService.getUserProperties();
+  userProperties.deleteProperty('dscc.similarwebapi.key');
+}
+
+// eslint-disable-next-line no-unused-vars
+function isAuthValid() {
+  var userProperties = PropertiesService.getUserProperties();
+  var key = userProperties.getProperty('dscc.similarwebapi.key');
+
+  var data = httpGet('https://api.similarweb.com/capabilities', { api_key: key });
+
+  return !!(data && data.remaining_hits);
+}
+
+// eslint-disable-next-line no-unused-vars
+function isAdminUser() {
+  var adminUsersWhitelist = [
+    'gregory.fryns@similarweb.com',
+    'gregory.fryns@gmail.com'
+  ];
+  var email = Session.getEffectiveUser().getEmail();
+  return adminUsersWhitelist.indexOf(email) > -1;
+}
+
+function checkForValidKey(key) {
+  // Check key format
+  if (!key.match(/[0-9a-f]{32}/i)) {
+    return false;
+  }
+
+  // Check if key is valid
+  var data = httpGet('https://api.similarweb.com/capabilities', { api_key: key });
+
+  return !!(data && data.remaining_hits);
+}
+
+/**
+ * Sets the credentials.
+ * @param {Request} request The set credentials request.
+ * @return {object} An object with an errorCode.
+ */
+// eslint-disable-next-line no-unused-vars
+function setCredentials(request) {
+  var key = request.key;
+
+  var validKey = checkForValidKey(key);
+  if (!validKey) {
+    return {
+      errorCode: 'INVALID_CREDENTIALS'
+    };
+  }
+  var userProperties = PropertiesService.getUserProperties();
+  userProperties.setProperty('dscc.similarwebapi.key', key);
+
+  return {
+    errorCode: 'NONE'
+  };
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -18,12 +82,6 @@ function getConfig() {
   config.newInfo()
     .setId('instructions')
     .setText('You can find your SimilarWeb API key or create a new one here (a SimilarWeb Pro account is needed): https://account.similarweb.com/#/api-management');
-
-  config.newTextInput()
-    .setId('apiKey')
-    .setName('Your SimilarWeb API key')
-    .setHelpText('Enter your 32-character SimilarWeb API key')
-    .setPlaceholder('1234567890abcdef1234567890abcdef');
 
   config.newTextInput()
     .setId('domains')
@@ -90,8 +148,11 @@ function getSchema(request) {
 // eslint-disable-next-line no-unused-vars
 function getData(request) {
   var MAX_NB_DOMAINS = 10;
+
+  var userProperties = PropertiesService.getUserProperties();
+  var apiKey = userProperties.getProperty('dscc.similarwebapi.key');
+
   var country = request.configParams.country.trim().toLowerCase();
-  var apiKey = request.configParams.apiKey.trim().toLowerCase();
   var domains = request.configParams.domains.split(',').slice(0, MAX_NB_DOMAINS).map(function(domain) {
     return domain.trim().replace(/^(?:https?:\/\/)?(?:www\.)?/i, '').replace(/\/.*$/i, '').toLowerCase();
   });
@@ -111,7 +172,6 @@ function getData(request) {
   domains.forEach(function(domain) {
     collectedData[domain] = {};
 
-    // data[domain] = collectData(endpoints, domain, country, apiKey);
     params.desktop['domain'] = domain;
     var data = retrieveOrGet(url, params.desktop);
     if (data && data.visits && data.visits[domain]) {
@@ -131,16 +191,6 @@ function getData(request) {
     schema: requestedFields.build(),
     rows: buildTabularData(requestedFields, collectedData)
   };
-}
-
-// eslint-disable-next-line no-unused-vars
-function isAdminUser() {
-  var adminUsersWhitelist = [
-    'gregory.fryns@similarweb.com',
-    'gregory.fryns@gmail.com'
-  ];
-  var email = Session.getEffectiveUser().getEmail();
-  return adminUsersWhitelist.indexOf(email) > -1;
 }
 
 // eslint-disable-next-line no-unused-vars
