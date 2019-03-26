@@ -35,7 +35,7 @@ function generateData(arraySize) {
 test('Test Cache', () => {
   var cacheService = new UserCache();
 
-  var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits-full';
+  var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits';
   var params = {
     api_key: '0123456789abcdef0123456789abcdef',
     country: 'world',
@@ -54,7 +54,7 @@ test('Test Cache', () => {
 test('Test Cache Chunks', () => {
   var cacheService = new UserCache();
 
-  var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits-full';
+  var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits';
   var params = {
     api_key: '0123456789abcdef0123456789abcdef',
     country: 'world',
@@ -74,7 +74,7 @@ test('Test Cache Chunks', () => {
 test('No API key in cache key', () => {
   var cacheService = new UserCache();
 
-  var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits-full';
+  var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits';
   var params = {
     api_key: '0123456789abcdef0123456789abcdef',
     country: 'world',
@@ -91,7 +91,7 @@ test('No API key in cache key', () => {
 test('No show_verified in cache key', () => {
   var cacheService = new UserCache();
 
-  var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits-full';
+  var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits';
   var params = {
     api_key: '0123456789abcdef0123456789abcdef',
     country: 'world',
@@ -102,5 +102,34 @@ test('No show_verified in cache key', () => {
 
   var cache = new DataCache(cacheService, url, params);
   var reApiKey = /show_verified=(?:true|false)/gi;
-  expect(reApiKey.test(cache.cacheKey)).toBeFalsy();
+  expect(cache.cacheKey).toEqual(expect.not.stringMatching(reApiKey));
+});
+
+test('Cache Key - Shortened params', () => {
+  var cacheService = new UserCache();
+
+  var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits';
+  var params = {
+    api_key: '0123456789abcdef0123456789abcdef',
+    country: 'world',
+    domain: 'toto.com',
+    start_date: '2018-01',
+    end_date: '2018-12',
+    granularity: 'monthly',
+    main_domain_only: 'false',
+    show_verified: 'false',
+    format: 'json'
+  };
+
+  var cache = new DataCache(cacheService, url, params);
+  // check if all parameters are there and that the new key is max 2 chars long
+  Object.keys(params)
+    .filter(function(key) { return  ['api_key', 'format', 'show_verified'].indexOf(key) < 0; })
+    .forEach(function(key) {
+      var val = params[key];
+      var reExtractKey = new RegExp('.*[?&](\\w+)=' + val + '\\b', 'i');
+      var match = cache.cacheKey.match(reExtractKey);
+      expect(match).not.toBeFalsy();
+      expect(match[1].length).toBeLessThanOrEqual(2);
+    });
 });

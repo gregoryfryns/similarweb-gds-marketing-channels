@@ -27,20 +27,23 @@ DataCache.MAX_CACHE_SIZE = 100 * 1024;
  * @return {String} cache key
  */
 DataCache.prototype.buildCacheKey = function(url, params) {
-  var par = JSON.parse(JSON.stringify(params));
-  delete par['api_key'];
-  delete par['format'];
-  delete par['show_verified'];
+  function shortenKey(key) {
+    var shortKeys = {
+      'country': 'c',
+      'domain': 'd',
+      'end_date': 'ed',
+      'start_date': 'sd',
+      'granularity': 'g',
+      'main_domain_only': 'md'
+    };
 
-  var parString = Object.keys(par).sort().map(function(x) {return x + '=' + par[x];}).join('&');
+    return shortKeys[key] || key;
+  }
 
-  // shorten some key names to gain some characters (max cache key length = 150 chars)
-  parString = parString.replace('country=', 'c=')
-    .replace('domain=', 'd=')
-    .replace('end_date=', 'ed=')
-    .replace('start_date=', 'sd=')
-    .replace('granularity=', 'g=')
-    .replace('main_domain_only=', 'md=');
+  var parString = Object.keys(params)
+    .filter(function(key) { return  ['api_key', 'format', 'show_verified'].indexOf(key) < 0; })
+    .sort().map(function(key) {return shortenKey(key) + '=' + params[key];})
+    .join('&');
 
   return url.replace(/^https:\/\/api\.similarweb\.com\/.*\/website\/xxx\//, '') + '?' + parString;
 };
