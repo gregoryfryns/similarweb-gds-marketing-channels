@@ -26,9 +26,10 @@ function isAuthValid() {
 
   var data = httpGet('https://api.similarweb.com/capabilities', { api_key: key });
 
-  return !!(data && data.remaining_hits);
+  return (data && data.hasOwnProperty('remaining_hits'));
 }
 
+// TODO: look for a proper way to implement this function
 // eslint-disable-next-line no-unused-vars
 function isAdminUser() {
   var adminUsersWhitelist = [
@@ -39,6 +40,11 @@ function isAdminUser() {
   return adminUsersWhitelist.indexOf(email) > -1;
 }
 
+/**
+ * Checks if the submitted key is valid
+ * @param {Request} key The Similarweb API key to be checked
+ * @return {boolean} True if the key is valid, false otherwise
+ */
 function checkForValidKey(key) {
   // Check key format
   if (!key.match(/[0-9a-f]{32}/i)) {
@@ -48,7 +54,7 @@ function checkForValidKey(key) {
   // Check if key is valid
   var data = httpGet('https://api.similarweb.com/capabilities', { api_key: key });
 
-  return !!(data && data.remaining_hits);
+  return (data && data.hasOwnProperty('remaining_hits'));
 }
 
 /**
@@ -58,7 +64,7 @@ function checkForValidKey(key) {
  */
 // eslint-disable-next-line no-unused-vars
 function setCredentials(request) {
-  var key = request.key;
+  var key = request.key.trim().toLowerCase();
 
   var validKey = checkForValidKey(key);
   if (!validKey) {
