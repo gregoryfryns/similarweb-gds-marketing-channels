@@ -1,7 +1,7 @@
 /* global DataStudioApp, Session, PropertiesService */
 
 if (typeof(require) !== 'undefined') {
-  var [retrieveOrGet, httpGet] = require('./utils.js')['retrieveOrGet', 'httpGet'];
+  var [httpGet, retrieveOrGet, retrieveOrGetAll, dateToYearMonth, buildUrl] = require('./utils.js')['httpGet', 'retrieveOrGet', 'retrieveOrGetAll', 'dateToYearMonth', 'buildUrl'];
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -116,6 +116,11 @@ function getConnectorFields() {
   fields.newDimension()
     .setId('date')
     .setName('Date')
+    .setType(types.YEAR_MONTH_DAY);
+
+  fields.newDimension()
+    .setId('year_month')
+    .setName('Date (Year & Month)')
     .setType(types.YEAR_MONTH);
 
   fields.newDimension()
@@ -175,21 +180,31 @@ function getData(request) {
   var collectedData = {};
   var params = generateApiParams(apiKey, country);
 
-  domains.forEach(function(domain) {
-    collectedData[domain] = {};
+  var requests = domains.map(function(dom) {
+    params.desktop['domain'] = dom;
+    var fullUrl = buildUrl(url, params.desktop);
+    return fullUrl;
+  });
 
-    params.desktop['domain'] = domain;
-    var data = retrieveOrGet(url, params.desktop);
-    if (data && data.visits && data.visits[domain]) {
-      data.visits[domain].forEach(function(src) {
-        src.visits.forEach(function(monthlyValues) {
-          var date = monthlyValues.date;
-          if (!collectedData[domain].hasOwnProperty(date)) {
-            collectedData[domain][date] = {};
-          }
-          collectedData[domain][date][src.source_type] = { organic: monthlyValues.organic, paid: monthlyValues.paid };
+  console.log('Bulk fetch for urls: ' + JSON.stringify(requests));
+  var replies = retrieveOrGetAll(requests);
+
+  replies.forEach(function (data) {
+    if (data && data.meta && data.meta.request) {
+      var domain = data.meta.request.domain;
+      collectedData[domain] = {};
+
+      if (data.visits[domain]) {
+        data.visits[domain].forEach(function(src) {
+          src.visits.forEach(function(monthlyValues) {
+            var date = monthlyValues.date;
+            if (!collectedData[domain].hasOwnProperty(date)) {
+              collectedData[domain][date] = {};
+            }
+            collectedData[domain][date][src.source_type] = { organic: monthlyValues.organic, paid: monthlyValues.paid };
+          });
         });
-      });
+      }
     }
   });
 
@@ -197,14 +212,6 @@ function getData(request) {
     schema: requestedFields.build(),
     rows: buildTabularData(requestedFields, collectedData)
   };
-}
-
-// eslint-disable-next-line no-unused-vars
-function throwError (message, userSafe) {
-  if (userSafe) {
-    message = 'DS_USER:' + message;
-  }
-  throw new Error(message);
 }
 
 function buildTabularData(requestedFields, data) {
@@ -251,6 +258,9 @@ function buildRow(requestedFields, date, dom, channel, value) {
       row.push(value);
       break;
     case 'date':
+      row.push(date.split('-').slice(0, 3).join(''));
+      break;
+    case 'year_month':
       row.push(date.split('-').slice(0, 2).join(''));
       break;
     case 'domain':
@@ -285,7 +295,6 @@ function generateApiParams(apiKey, country, domain) {
     var paramsCommon = {
       api_key: apiKey,
       country: country,
-      domain: domain,
       granularity: 'monthly',
       main_domain_only: 'false',
       show_verified: 'false'
@@ -297,15 +306,15 @@ function generateApiParams(apiKey, country, domain) {
     // If the selected country is available for that API key (desktop)
     if (capData.web_desktop_data.countries.some(function(c) {return c.code.toLowerCase() == country;})) {
       params.desktop = JSON.parse(JSON.stringify(paramsCommon)); // clone paramsCommon object
-      params.desktop['start_date'] = capData.web_desktop_data.snapshot_interval.start_date.split('-').slice(0, 2).join('-');
-      params.desktop['end_date'] = capData.web_desktop_data.snapshot_interval.end_date.split('-').slice(0, 2).join('-');
+      params.desktop['start_date'] = dateToYearMonth(capData.web_desktop_data.snapshot_interval.start_date);
+      params.desktop['end_date'] = dateToYearMonth(capData.web_desktop_data.snapshot_interval.end_date);
     }
 
     // If the selected country is available for that API key (mobile web)
     if (capData.web_mobile_data.countries.some(function(c) {return c.code.toLowerCase() == country;})) {
       params.mobile = JSON.parse(JSON.stringify(paramsCommon)); // clone paramsCommon object
-      params.mobile['start_date'] = capData.web_mobile_data.snapshot_interval.start_date.split('-').slice(0, 2).join('-');
-      params.mobile['end_date'] = capData.web_mobile_data.snapshot_interval.end_date.split('-').slice(0, 2).join('-');
+      params.mobile['start_date'] = dateToYearMonth(capData.web_mobile_data.snapshot_interval.start_date);
+      params.mobile['end_date'] = dateToYearMonth(capData.web_mobile_data.snapshot_interval.end_date);
     }
   }
 

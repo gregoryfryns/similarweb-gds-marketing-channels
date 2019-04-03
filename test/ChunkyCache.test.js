@@ -1,4 +1,4 @@
-import DataCache from '../src/DataCache.js';
+var ChunkyCache = require('../src/ChunkyCache.js')['default'];
 
 /**
  * Emulate Cache Service
@@ -34,6 +34,7 @@ function generateData(arraySize) {
 
 test('Test Cache', () => {
   var cacheService = new UserCache();
+  var cache = new ChunkyCache(cacheService);
 
   var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits';
   var params = {
@@ -45,14 +46,33 @@ test('Test Cache', () => {
     format: 'json'
   };
 
-  var cache = new DataCache(cacheService, url, params);
+  var cacheKey = cache.buildCacheKey(url, params);
+  cache.put(cacheKey, 'my_data');
+  expect(cache.get(cacheKey)).toBe('my_data');
+});
 
-  cache.set('my_data');
-  expect(cache.get()).toBe('my_data');
+test('Test Fulll URL', () => {
+  var cacheService = new UserCache();
+  var cache = new ChunkyCache(cacheService);
+
+  var url = [
+    'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits',
+    '?api_key=0123456789abcdef0123456789abcdef',
+    '&country=world',
+    '&domain=toto.com',
+    '&main_domain_only=false',
+    '&show_verified=false',
+    '&format=json'
+  ].join('');
+
+  var cacheKey = cache.buildCacheKey(url);
+  cache.put(cacheKey, 'my_data');
+  expect(cache.get(cacheKey)).toBe('my_data');
 });
 
 test('Test Cache Chunks', () => {
   var cacheService = new UserCache();
+  var cache = new ChunkyCache(cacheService);
 
   var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits';
   var params = {
@@ -64,15 +84,16 @@ test('Test Cache Chunks', () => {
     format: 'json'
   };
 
-  var data = generateData(Math.max((3 * DataCache.MAX_CACHE_SIZE) - 10), 1);
-  var cache = new DataCache(cacheService, url, params);
+  var data = generateData(Math.max((3 * 100 * 1024) - 10), 1);
+  var cacheKey = cache.buildCacheKey(url, params);
 
-  cache.set(data);
-  expect(cache.get()).toBe(data);
+  cache.put(cacheKey, data);
+  expect(cache.get(cacheKey)).toBe(data);
 });
 
 test('No API key in cache key', () => {
   var cacheService = new UserCache();
+  var cache = new ChunkyCache(cacheService);
 
   var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits';
   var params = {
@@ -83,13 +104,14 @@ test('No API key in cache key', () => {
     show_verified: 'false'
   };
 
-  var cache = new DataCache(cacheService, url, params);
+  var cacheKey = cache.buildCacheKey(url, params);
   var reApiKey = /api_key=[0-9a-f]{32}/gi;
-  expect(reApiKey.test(cache.cacheKey)).toBeFalsy();
+  expect(reApiKey.test(cacheKey)).toBeFalsy();
 });
 
 test('No show_verified in cache key', () => {
   var cacheService = new UserCache();
+  var cache = new ChunkyCache(cacheService);
 
   var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits';
   var params = {
@@ -100,13 +122,14 @@ test('No show_verified in cache key', () => {
     show_verified: 'false'
   };
 
-  var cache = new DataCache(cacheService, url, params);
+  var cacheKey = cache.buildCacheKey(url, params);
   var reApiKey = /show_verified=(?:true|false)/gi;
-  expect(cache.cacheKey).toEqual(expect.not.stringMatching(reApiKey));
+  expect(cacheKey).toEqual(expect.not.stringMatching(reApiKey));
 });
 
 test('Cache Key - Shortened params', () => {
   var cacheService = new UserCache();
+  var cache = new ChunkyCache(cacheService);
 
   var url = 'https://api.similarweb.com/v1/website/xxx/total-traffic-and-engagement/visits';
   var params = {
@@ -121,14 +144,14 @@ test('Cache Key - Shortened params', () => {
     format: 'json'
   };
 
-  var cache = new DataCache(cacheService, url, params);
+  var cacheKey = cache.buildCacheKey(url, params);
   // check if all parameters are there and that the new key is max 2 chars long
   Object.keys(params)
     .filter(function(key) { return  ['api_key', 'format', 'show_verified'].indexOf(key) < 0; })
     .forEach(function(key) {
       var val = params[key];
       var reExtractKey = new RegExp('.*[?&](\\w+)=' + val + '\\b', 'i');
-      var match = cache.cacheKey.match(reExtractKey);
+      var match = cacheKey.match(reExtractKey);
       expect(match).not.toBeFalsy();
       expect(match[1].length).toBeLessThanOrEqual(2);
     });
