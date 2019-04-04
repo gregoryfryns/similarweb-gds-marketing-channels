@@ -1,7 +1,7 @@
 /* global DataStudioApp, Session, PropertiesService */
 
 if (typeof(require) !== 'undefined') {
-  var [httpGet, retrieveOrGet, retrieveOrGetAll, dateToYearMonth, buildUrl] = require('./utils.js')['httpGet', 'retrieveOrGet', 'retrieveOrGetAll', 'dateToYearMonth', 'buildUrl'];
+  var [httpGet, retrieveOrGet, retrieveOrGetAll, dateToYearMonth, buildUrl, cleanDomain] = require('./utils.js')['httpGet', 'retrieveOrGet', 'retrieveOrGetAll', 'dateToYearMonth', 'buildUrl', 'cleanDomain'];
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -164,9 +164,7 @@ function getData(request) {
   var apiKey = userProperties.getProperty('dscc.similarwebapi.key');
 
   var country = request.configParams.country.trim().toLowerCase();
-  var domains = request.configParams.domains.split(',').slice(0, MAX_NB_DOMAINS).map(function(domain) {
-    return domain.trim().replace(/^(?:https?:\/\/)?(?:www\.)?/i, '').replace(/\/.*$/i, '').toLowerCase();
-  });
+  var domains = request.configParams.domains.split(',').slice(0, MAX_NB_DOMAINS).map(cleanDomain);
 
   var requestedFieldIDs = request.fields.map(function(field) {
     return field.name;
@@ -186,7 +184,6 @@ function getData(request) {
     return fullUrl;
   });
 
-  console.log('Bulk fetch for urls: ' + JSON.stringify(requests));
   var replies = retrieveOrGetAll(requests);
 
   replies.forEach(function (data) {
