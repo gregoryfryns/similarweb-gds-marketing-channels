@@ -1,4 +1,3 @@
-// var [dateToYearMonth, buildUrl, cleanDomain] = require('../src/utils.js')['dateToYearMonth', 'buildUrl', 'cleanDomain'];
 var dateToYearMonth = require('../src/utils.js')['dateToYearMonth'];
 var buildUrl = require('../src/utils.js')['buildUrl'];
 var cleanDomain = require('../src/utils.js')['cleanDomain'];

@@ -315,5 +315,13 @@ function generateApiParams(apiKey, country, domain) {
     }
   }
 
+  if (!params.desktop && !params.mobile) {
+    DataStudioApp.createCommunityConnector()
+      .newUserError()
+      .setDebugText('Invalid Country Code : ' + country + ' - API key: xxxxxxxx' + apiKey.slice(-6))
+      .setText('The selected country filter (' + country + ') is not available, please use another one or contact your SimilarWeb account manager for an upgrade.')
+      .throwException();
+  }
+
   return params;
 }
