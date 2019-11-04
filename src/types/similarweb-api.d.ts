@@ -45,6 +45,20 @@ export interface CapabilitiesReply extends SimilarwebApiReply {
   app_engagement_data: CategoryCapabilities;
 }
 
+export interface DescribeReply {
+  response: {
+    [key: string]: {
+      countries: {
+        world: {
+          start_date: string;
+          end_date: string;
+          fresh_data: string;
+        };
+      };
+    };
+  };
+}
+
 export interface VisitsReply extends SimilarwebApiReply {
   visits: {
     date: string;
@@ -99,8 +113,34 @@ export interface TrafficSourcesOverviewReply extends SimilarwebApiReply {
       source_type: string;
       visits: [{
         date: string;
+        organic?: number;
+        paid?: number;
+        visits?: number;
+      }];
+    }];
+  };
+}
+
+export interface DesktopTrafficSourcesOverviewReply extends SimilarwebApiReply {
+  visits: {
+    [domain: string]: [{
+      source_type: string;
+      visits: [{
+        date: string;
         organic: number;
         paid: number;
+      }];
+    }];
+  };
+}
+
+export interface MobileWebTrafficSourcesOverviewReply extends SimilarwebApiReply {
+  visits: {
+    [domain: string]: [{
+      source_type: string;
+      visits: [{
+        date: string;
+        visits: number;
       }];
     }];
   };
@@ -137,6 +177,15 @@ export interface AdNetworksReply extends SimilarwebApiReply {
   global_ranking: number;
   category: string;
   category_ranking: string;
+}
+
+export interface AdvertisersReply extends SimilarwebApiReply {
+  advertisers: {
+    share: number;
+    domain: string;
+    change: number;
+  }[];
+  visits: number;
 }
 
 export interface PublishersReply extends SimilarwebApiReply {
@@ -217,6 +266,18 @@ export interface AudienceInterestsReply extends SimilarwebApiReply {
   category_ranking: number;
 }
 
+export interface GeographyDistribution extends SimilarwebApiReply {
+  records: {
+    country: number;
+    share: number;
+    visits: number;
+    pages_per_visit: number;
+    average_time: number;
+    bounce_rate: number;
+    rank: number;
+  }[];
+}
+
 export interface CategoryRankReply extends SimilarwebApiReply {
   category: string;
   rank: number;
@@ -224,6 +285,19 @@ export interface CategoryRankReply extends SimilarwebApiReply {
 
 export interface TopSitesReply extends SimilarwebApiReply {
   top_sites: {
+    rank: number;
+    domain: string;
+  }[];
+}
+
+export interface TopSitesInternalReply extends SimilarwebApiReply {
+  top_sites: {
+    traffic_share: number;
+    monthly_visits: number;
+    visit_duration: number;
+    pages_per_visit: number;
+    bounce_rate: number;
+    unique_users: number;
     rank: number;
     domain: string;
   }[];
@@ -318,9 +392,9 @@ export interface ApiLiteReply {
   top_publishers: LiteSourceItem[];
   top_ad_networks: LiteSourceItem[];
   incoming_ads_rolling_unique_count: number;
-  top_categories_and_fills: any[];
-  top_tags_and_strength: any[];
-  top_also_visited: any[];
+  top_categories_and_fills: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  top_tags_and_strength: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+  top_also_visited: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
   also_visited_unique_count: number;
   similar_sites: SimilarSiteItem[];
   similar_sites_by_rank: SimilarSiteItem[];
@@ -488,7 +562,7 @@ export interface AppSessionsPerUserReply extends SimilarwebApiReply {
   sessions_per_user: {
     start_date: string;
     end_date: string;
-    sessions_per_user: string;
+    sessions_per_user: number;
   }[];
 }
 
